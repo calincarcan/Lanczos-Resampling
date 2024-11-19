@@ -119,7 +119,7 @@ int lanczos_2d_interpolate(int **data, int height, int width, double x, double y
     int center_x = (int)x;
     int center_y = (int)y;
 
-// #pragma omp parallel for collapse(2) reduction(+ : result, weight_sum)
+// #pragma omp parallel for collapse(2) reduction(+ : result, weight_sum) -- mai lent
     for (int i = center_x - a + 1; i < center_x + a; i++)
     {
         for (int j = center_y - a + 1; j < center_y + a; j++)
