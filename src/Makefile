@@ -4,7 +4,7 @@ lanczos: lanczos.c
 	gcc -o ../bin/lanczos lanczos.c -lm -lpng
 
 run: lanczos
-	../bin/lanczos
+	../bin/lanczos 512 4096
 
 clean:
 	rm -f ../bin/*
