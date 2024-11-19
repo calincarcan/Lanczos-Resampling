@@ -1,69 +1,8 @@
 #include <stdio.h>
 #include <math.h>
-#include <png.h>
 #include <stdlib.h>
 
 #define LANCZOS_RADIUS 3
-
-void write_png(const char* filename, int** matrix, int width, int height) {
-    FILE *fp = fopen(filename, "wb");
-    if (!fp) {
-        perror("File opening failed");
-        return;
-    }
-
-    png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    if (!png) {
-        fclose(fp);
-        fprintf(stderr, "Failed to create png struct\n");
-        return;
-    }
-
-    png_infop info = png_create_info_struct(png);
-    if (!info) {
-        png_destroy_write_struct(&png, NULL);
-        fclose(fp);
-        fprintf(stderr, "Failed to create info struct\n");
-        return;
-    }
-
-    if (setjmp(png_jmpbuf(png))) {
-        png_destroy_write_struct(&png, &info);
-        fclose(fp);
-        fprintf(stderr, "Error during png creation\n");
-        return;
-    }
-
-    png_init_io(png, fp);
-
-    // Set the PNG header info for an RGBA image
-    png_set_IHDR(
-        png, info, width, height,
-        8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE,
-        PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT
-    );
-    png_write_info(png, info);
-
-    // Write each row of the matrix to the PNG file as RGBA values
-    for (int y = 0; y < height; y++) {
-        png_bytep row = (png_bytep)malloc(width * 4 * sizeof(png_byte)); // 4 bytes per pixel for RGBA
-        for (int x = 0; x < width; x++) {
-            int grayscale = matrix[y][x];
-            grayscale = grayscale > 255 ? 255 : (grayscale < 0 ? 0 : grayscale); // Clamp to [0, 255]
-
-            row[x*4 + 0] = grayscale; // Red
-            row[x*4 + 1] = grayscale; // Green
-            row[x*4 + 2] = grayscale; // Blue
-            row[x*4 + 3] = 255;       // Alpha (fully opaque)
-        }
-        png_write_row(png, row);
-        free(row);
-    }
-
-    png_write_end(png, NULL);
-    png_destroy_write_struct(&png, &info);
-    fclose(fp);
-}
 
 double lanczos_kernel(double x) {
     int a = LANCZOS_RADIUS;
@@ -129,7 +68,7 @@ void apply_2d_lanczos(int **data, int height, int width, int **output, int new_h
     }
 }
 
-// DEPRECATED
+//! DEPRECATED
 int lanczos_1d_interpolate(int* data, int length, double x) {
     int a = LANCZOS_RADIUS;
     int i;
@@ -154,7 +93,7 @@ int lanczos_1d_interpolate(int* data, int length, double x) {
     return result;
 }
 
-// DEPRECATED
+//! DEPRECATED
 void apply_1d_lanczos(int* data, int length, int* output, int output_length) {
     int a = LANCZOS_RADIUS;
     double scale = (double)(length - 1) / (output_length - 1); // scaling factor for resampling
@@ -164,10 +103,17 @@ void apply_1d_lanczos(int* data, int length, int* output, int output_length) {
     }
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+    if (argc < 3) {
+        printf("Usage: %s <initial_size> <final_size>\n", argv[0]);
+        return 1;
+    }
+    int initial_size = atoi(argv[1]);
+    int final_size = atoi(argv[2]);
+
     int width, height;
-    width = 128;
-    height = 128;
+    width = initial_size;
+    height = initial_size;
     int **image = malloc(height * sizeof(int *));
     for (int i = 0; i < height; i++) {
         image[i] = malloc(width * sizeof(int));
@@ -176,17 +122,14 @@ int main() {
         }
     }
 
-    int new_width = 1024;
-    int new_height = 1024;
+    int new_width = final_size;
+    int new_height = final_size;
 
     int **new_image = calloc(new_height, sizeof(int *));
     for (int i = 0; i < new_height; i++)
         new_image[i] = calloc(new_width, sizeof(int));
 
     apply_2d_lanczos(image, height, width, new_image, new_height, new_width);
-
-    // printf("Original image:\n");
-    // print(image, height, width);
 
     FILE *original_file = fopen("original.txt", "w");
     if (original_file != NULL) {
@@ -201,7 +144,6 @@ int main() {
     } else {
         perror("Failed to open file for writing");
     }
-
 
     FILE *resampled_file = fopen("resampled.txt", "w");
     if (resampled_file != NULL) {
@@ -218,9 +160,6 @@ int main() {
     }
     // printf("Resampled image:\n");
     // print(new_image, new_height, new_width);
-
-    // write_png("small_rgba.png", image, width, height);
-    // write_png("big_rgba.png", new_image, new_width, new_height);
 
     return 0;
 }
