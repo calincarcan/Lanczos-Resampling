@@ -166,8 +166,8 @@ void apply_1d_lanczos(int* data, int length, int* output, int output_length) {
 
 int main() {
     int width, height;
-    width = 128;
-    height = 128;
+    width = 512;
+    height = 512;
     int **image = malloc(height * sizeof(int *));
     for (int i = 0; i < height; i++) {
         image[i] = malloc(width * sizeof(int));
@@ -176,8 +176,8 @@ int main() {
         }
     }
 
-    int new_width = 1024;
-    int new_height = 1024;
+    int new_width = 4096;
+    int new_height = 4096;
 
     int **new_image = calloc(new_height, sizeof(int *));
     for (int i = 0; i < new_height; i++)
