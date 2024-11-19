@@ -1,4 +1,4 @@
-all: lanczos
+all: run
 
 lanczos: lanczos.c
 	gcc -o ../bin/lanczos lanczos.c -lm -lpng
