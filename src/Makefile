@@ -6,12 +6,11 @@ lanczos_serial: lanczos_serial.c
 lanczos_omp: lanczos_omp.c 
 	gcc -o ../bin/lanczos_omp lanczos_omp.c -lm -lpng -fopenmp
 
-run_lanczos_serial: 
-	../bin/lanczos_serial
+run_serial: 
+	../bin/lanczos_serial 100 200
 
 run_omp: 
-	../bin/lanczos_omp
-
+	../bin/lanczos_omp 100 200
 
 clean:
 	rm -f ../bin/*

@@ -88,23 +88,17 @@ void print(int **a, int height, int width)
 
 #pragma endregion
 
-#define initial_seize 512
-#define final_size 4096
-
 // TODO: improve using Taylor series
 double lanczos_kernel(double x)
 {
     int a = LANCZOS_RADIUS;
-    if (x == 0)
-    {
+    if (x == 0) {
         return 1.0; // sinc(0) = 1
     }
-    else if (x == a || x == -a)
-    {
+    else if (x == a || x == -a) {
         return 0.0; // Lanczos function for values of x = ±a
     }
-    else
-    {
+    else {
         return (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
     }
 }
@@ -206,11 +200,16 @@ void apply_1d_lanczos(int *data, int length, int *output, int output_length)
 
 #pragma endregion
 
-int main()
-{
+int main(int argc, char *argv[]) {
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s <initial_size> <final_size>\n", argv[0]);
+        return 1;
+    }
+
     int width, height;
-    width = initial_seize;
-    height = initial_seize;
+    width = atoi(argv[1]);
+    height = atoi(argv[1]);
+
     int **image = malloc(height * sizeof(int *));
     for (int i = 0; i < height; i++)
     {
@@ -221,8 +220,8 @@ int main()
         }
     }
 
-    int new_width = final_size;
-    int new_height = final_size;
+    int new_width = atoi(argv[2]);
+    int new_height = atoi(argv[2]);
 
     int **new_image = calloc(new_height, sizeof(int *));
     for (int i = 0; i < new_height; i++)
