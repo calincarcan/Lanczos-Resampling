@@ -1,4 +1,4 @@
 # Ignore ./bin
-/bin
+/bin/*
 *.vscode
 /src/*.txt
