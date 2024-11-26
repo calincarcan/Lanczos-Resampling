@@ -2,7 +2,6 @@
 #include <math.h>
 #include <png.h>
 #include <stdlib.h>
-#include <omp.h>
 
 #define LANCZOS_RADIUS 3
 
@@ -34,6 +33,8 @@ double lanczos_kernel(double x)
 }
 
 #pragma region NO_PARRALLEL
+
+
 
 void write_png(const char *filename, int **matrix, int width, int height)
 {
@@ -115,6 +116,7 @@ void print(int **a, int height, int width)
 
 #pragma endregion
 
+
 int lanczos_2d_interpolate(int **data, int height, int width, double x, double y)
 {
     int a = LANCZOS_RADIUS;
@@ -125,7 +127,6 @@ int lanczos_2d_interpolate(int **data, int height, int width, double x, double y
     int center_x = (int)x;
     int center_y = (int)y;
 
-// #pragma omp parallel for collapse(2) reduction(+ : result, weight_sum) -- mai lent
     for (int i = center_x - a + 1; i < center_x + a; i++)
     {
         for (int j = center_y - a + 1; j < center_y + a; j++)
@@ -154,7 +155,6 @@ void apply_2d_lanczos(int **data, int height, int width, int **output, int new_h
     double scale_height = (double)(height - 1) / (new_height - 1);
     double scale_width = (double)(width - 1) / (new_width - 1);
 
-#pragma omp parallel for collapse(2)
     for (int i = 0; i < new_height; i++)
     {
         for (int j = 0; j < new_width; j++)
@@ -251,5 +251,6 @@ int main(int argc, char *argv[])
     }
 
     free(new_image);
+
     return 0;
 }

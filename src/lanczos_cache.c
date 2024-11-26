@@ -135,9 +135,16 @@ void apply_2d_lanczos(int *data, int height, int width, int *output, int new_hei
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-    int width = INITIAL_SIZE, height = INITIAL_SIZE;
+
+    if (argc != 3)
+    {
+        fprintf(stderr, "Usage: %s <image_size>\n", argv[0]);
+        return 1;
+    }
+
+    int width = atoi(argv[1]), height = atoi(argv[1]);
     int *image = malloc(height * width * sizeof(int));
 
     for (int i = 0; i < height; i++)
@@ -148,7 +155,7 @@ int main()
         }
     }
 
-    int new_width = FINAL_SIZE, new_height = FINAL_SIZE;
+    int new_width = atoi(argv[2]), new_height = atoi(argv[2]);
     int *new_image = calloc(new_height * new_width, sizeof(int));
 
     apply_2d_lanczos(image, height, width, new_image, new_height, new_width);

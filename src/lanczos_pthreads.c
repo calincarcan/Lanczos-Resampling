@@ -5,12 +5,35 @@
 #include <stdlib.h>
 #include <omp.h>
 
-
 #define LANCZOS_RADIUS 3
-#define initial_size 512
-#define final_size 4096
+#define NUM_THREADS 8 // Define the number of threads
 
-#define NUM_THREADS 4 // Define the number of threads
+// Memorizarea de valori pentru kernelul Lanczos
+double lanczos_values[LANCZOS_RADIUS * 2 + 1][LANCZOS_RADIUS * 2 + 1];
+
+double lanczos_kernel(double x)
+{
+
+    if (lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x] != 0)
+    {
+        return lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x];
+    }
+
+    int a = LANCZOS_RADIUS;
+    if (x == 0)
+    {
+        return 1.0; // sinc(0) = 1
+    }
+    else if (x == a || x == -a)
+    {
+        return 0.0; // Lanczos function for values of x = ±a
+    }
+    else
+    {
+        lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x] = (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
+        return (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
+    }
+}
 
 typedef struct
 {
@@ -105,24 +128,6 @@ void print(int **a, int height, int width)
 }
 
 #pragma endregion
-
-// TODO: improve using Taylor series
-double lanczos_kernel(double x)
-{
-    int a = LANCZOS_RADIUS;
-    if (x == 0)
-    {
-        return 1.0; // sinc(0) = 1
-    }
-    else if (x == a || x == -a)
-    {
-        return 0.0; // Lanczos function for values of x = ±a
-    }
-    else
-    {
-        return (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
-    }
-}
 
 int lanczos_2d_interpolate(int **data, int height, int width, double x, double y)
 {
@@ -267,11 +272,11 @@ void apply_1d_lanczos(int *data, int length, int *output, int output_length)
 
 #pragma endregion
 
-int main()
+int main(int argc, char *argv[])
 {
     int width, height;
-    width = initial_size;
-    height = initial_size;
+    width = atoi(argv[1]);
+    height = atoi(argv[1]);
     int **image = malloc(height * sizeof(int *));
     for (int i = 0; i < height; i++)
     {
@@ -282,8 +287,8 @@ int main()
         }
     }
 
-    int new_width = final_size;
-    int new_height = final_size;
+    int new_width = atoi(argv[2]);
+    int new_height = atoi(argv[2]);
 
     int **new_image = calloc(new_height, sizeof(int *));
     for (int i = 0; i < new_height; i++)
@@ -291,51 +296,20 @@ int main()
 
     apply_2d_lanczos(image, height, width, new_image, new_height, new_width);
 
-    // printf("Original image:\n");
-    // print(image, height, width);
+    // Free the memory allocated for the images
 
-    // FILE *original_file = fopen("original.txt", "w");
-    // if (original_file != NULL)
-    // {
-    //     fprintf(original_file, "%d %d\n", height, width);
-    //     for (int i = 0; i < height; i++)
-    //     {
-    //         for (int j = 0; j < width; j++)
-    //         {
-    //             fprintf(original_file, "%d ", image[i][j]);
-    //         }
-    //         fprintf(original_file, "\n");
-    //     }
-    //     fclose(original_file);
-    // }
-    // else
-    // {
-    //     perror("Failed to open file for writing");
-    // }
+    for (int i = 0; i < height; i++)
+    {
+        free(image[i]);
+    }
 
-    // FILE *resampled_file = fopen("resampled.txt", "w");
-    // if (resampled_file != NULL)
-    // {
-    //     fprintf(resampled_file, "%d %d\n", new_height, new_width);
-    //     for (int i = 0; i < new_height; i++)
-    //     {
-    //         for (int j = 0; j < new_width; j++)
-    //         {
-    //             fprintf(resampled_file, "%d ", new_image[i][j]);
-    //         }
-    //         fprintf(resampled_file, "\n");
-    //     }
-    //     fclose(resampled_file);
-    // }
-    // else
-    // {
-    //     perror("Failed to open file for writing");
-    // }
-    // printf("Resampled image:\n");
-    // print(new_image, new_height, new_width);
+    free(image);
 
-    // write_png("small_rgba.png", image, width, height);
-    // write_png("big_rgba.png", new_image, new_width, new_height);
+    for (int i = 0; i < new_height; i++)
+    {
+        free(new_image[i]);
+    }
 
+    free(new_image);
     return 0;
 }
