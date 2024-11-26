@@ -3,6 +3,7 @@
 #include <png.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include
 
 #define LANCZOS_RADIUS 3
 
@@ -233,65 +234,101 @@ void apply_1d_lanczos(int* data, int length, int* output, int output_length) {
     }
 }
 
-int main() {
-    int width, height;
-    width = 512;
-    height = 512;
-    int **image = malloc(height * sizeof(int *));
-    for (int i = 0; i < height; i++) {
-        image[i] = malloc(width * sizeof(int));
-        for (int j = 0; j < width; j++) {
-            image[i][j] = rand() % 256;
+int main(int argc, char** argv) {
+    int rank, size;
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    int width = 512, height = 512;
+
+    int new_width = 4096, new_height = 4096;
+
+    int **image = NULL;
+    int **new_image = NULL;
+
+    if (rank == 0) {
+        image = malloc(height * sizeof(int*));
+        for (int i = 0; i < height; i++) {
+            image[i] = malloc(width * sizeof(int));
+            for (int j = 0; j < width; j++) {
+                image[i][j] = rand() % 256;
+            }
         }
     }
 
-    int new_width = 4096;
-    int new_height = 4096;
+    int local_new_height = new_height / size; 
+    int **local_new_image = calloc(local_new_height, sizeof(int*));
+    for (int i = 0; i < local_new_height; i++) {
+        local_new_image[i] = calloc(new_width, sizeof(int));
+    }
 
-    int **new_image = calloc(new_height, sizeof(int *));
-    for (int i = 0; i < new_height; i++)
-        new_image[i] = calloc(new_width, sizeof(int));
-
-    int thread_count = 8;
-    //apply_2d_lanczos(image, height, width, new_image, new_height, new_width);
-    apply_2d_lanczos_parallel(image, height, width, new_image, new_height, new_width, thread_count);
-
-    // printf("Original image:\n");
-    // print(image, height, width);
-
-    FILE *original_file = fopen("original.txt", "w");
-    if (original_file != NULL) {
-        fprintf(original_file, "%d %d\n", height, width);
+    int *image_linear = NULL;
+    if (rank == 0) {
+        image_linear = malloc(height * width * sizeof(int));
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
-                fprintf(original_file, "%d ", image[i][j]);
+                image_linear[i * width + j] = image[i][j];
             }
-            fprintf(original_file, "\n");
         }
-        fclose(original_file);
-    } else {
-        perror("Failed to open file for writing");
     }
 
+    int *local_image = malloc((height / size) * width * sizeof(int));
+    MPI_Scatter(image_linear, (height / size) * width, MPI_INT,
+                local_image, (height / size) * width, MPI_INT,
+                0, MPI_COMM_WORLD);
 
-    FILE *resampled_file = fopen("resampled.txt", "w");
-    if (resampled_file != NULL) {
-        fprintf(resampled_file, "%d %d\n", new_height, new_width);
+    int thread_count = 4;
+
+    ThreadArgs thread_args[thread_count];
+    pthread_t threads[thread_count];
+
+    for (int t = 0; t < thread_count; t++) {
+        thread_args[t].thread_id = t;
+        thread_args[t].thread_count = thread_count;
+        thread_args[t].data = local_image;
+        thread_args[t].height = height / size;
+        thread_args[t].width = width;
+        thread_args[t].output = local_new_image;
+        thread_args[t].new_height = local_new_height;
+        thread_args[t].new_width = new_width;
+
+        pthread_create(&threads[t], NULL, lanczos_thread_function, (void*)&thread_args[t]);
+    }
+
+    for (int t = 0; t < thread_count; t++) {
+        pthread_join(threads[t], NULL);
+    }
+
+    int *new_image_linear = NULL;
+    if (rank == 0) {
+        new_image_linear = malloc(new_height * new_width * sizeof(int));
+    }
+
+    int *local_new_image_linear = malloc(local_new_height * new_width * sizeof(int));
+    for (int i = 0; i < local_new_height; i++) {
+        for (int j = 0; j < new_width; j++) {
+            local_new_image_linear[i * new_width + j] = local_new_image[i][j];
+        }
+    }
+
+    MPI_Gather(local_new_image_linear, local_new_height * new_width, MPI_INT,
+               new_image_linear, local_new_height * new_width, MPI_INT,
+               0, MPI_COMM_WORLD);
+
+    if (rank == 0) {
+        new_image = malloc(new_height * sizeof(int*));
         for (int i = 0; i < new_height; i++) {
+            new_image[i] = malloc(new_width * sizeof(int));
             for (int j = 0; j < new_width; j++) {
-                fprintf(resampled_file, "%d ", new_image[i][j]);
+                new_image[i][j] = new_image_linear[i * new_width + j];
             }
-            fprintf(resampled_file, "\n");
         }
-        fclose(resampled_file);
-    } else {
-        perror("Failed to open file for writing");
+
+        write_png("output.png", new_image, new_width, new_height);
     }
-    // printf("Resampled image:\n");
-    // print(new_image, new_height, new_width);
 
-    // write_png("small_rgba.png", image, width, height);
-    // write_png("big_rgba.png", new_image, new_width, new_height);
-
+    MPI_Finalize();
     return 0;
 }
