@@ -9,8 +9,7 @@
 #define FINAL_SIZE 4096
 #define TILE_SIZE 32 // Optimal tile size for cache
 
-void write_png(const char *filename, int *matrix, int width, int height)
-{
+void write_png(const char *filename, int *matrix, int width, int height) {
     FILE *fp = fopen(filename, "wb");
     if (!fp)
     {
@@ -70,25 +69,20 @@ void write_png(const char *filename, int *matrix, int width, int height)
     fclose(fp);
 }
 
-double lanczos_kernel(double x)
-{
+double lanczos_kernel(double x) {
     int a = LANCZOS_RADIUS;
-    if (x == 0)
-    {
+    if (x == 0) {
         return 1.0;
     }
-    else if (x >= a || x <= -a)
-    {
+    else if (x >= a || x <= -a) {
         return 0.0;
     }
-    else
-    {
+    else {
         return (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
     }
 }
 
-int lanczos_2d_interpolate(int *data, int height, int width, double x, double y)
-{
+int lanczos_2d_interpolate(int *data, int height, int width, double x, double y) {
     int a = LANCZOS_RADIUS;
     double result = 0;
     double weight_sum = 0;
@@ -96,10 +90,8 @@ int lanczos_2d_interpolate(int *data, int height, int width, double x, double y)
     int center_x = (int)x;
     int center_y = (int)y;
 
-    for (int i = center_x - a + 1; i < center_x + a; i++)
-    {
-        for (int j = center_y - a + 1; j < center_y + a; j++)
-        {
+    for (int i = center_x - a + 1; i < center_x + a; i++) {
+        for (int j = center_y - a + 1; j < center_y + a; j++) {
             if (i < 0 || i >= height || j < 0 || j >= width)
                 continue;
 
@@ -112,19 +104,14 @@ int lanczos_2d_interpolate(int *data, int height, int width, double x, double y)
     return (weight_sum != 0) ? (int)(result / weight_sum) : 0;
 }
 
-void apply_2d_lanczos(int *data, int height, int width, int *output, int new_height, int new_width)
-{
+void apply_2d_lanczos(int *data, int height, int width, int *output, int new_height, int new_width) {
     double scale_height = (double)(height - 1) / (new_height - 1);
     double scale_width = (double)(width - 1) / (new_width - 1);
 
-    for (int i_block = 0; i_block < new_height; i_block += TILE_SIZE)
-    {
-        for (int j_block = 0; j_block < new_width; j_block += TILE_SIZE)
-        {
-            for (int i = i_block; i < i_block + TILE_SIZE && i < new_height; i++)
-            {
-                for (int j = j_block; j < j_block + TILE_SIZE && j < new_width; j++)
-                {
+    for (int i_block = 0; i_block < new_height; i_block += TILE_SIZE) {
+        for (int j_block = 0; j_block < new_width; j_block += TILE_SIZE) {
+            for (int i = i_block; i < i_block + TILE_SIZE && i < new_height; i++) {
+                for (int j = j_block; j < j_block + TILE_SIZE && j < new_width; j++) {
                     double x = i * scale_height;
                     double y = j * scale_width;
                     int result = lanczos_2d_interpolate(data, height, width, x, y);
@@ -135,11 +122,8 @@ void apply_2d_lanczos(int *data, int height, int width, int *output, int new_hei
     }
 }
 
-int main(int argc, char *argv[])
-{
-
-    if (argc != 3)
-    {
+int main(int argc, char *argv[]) {
+    if (argc != 3) {
         fprintf(stderr, "Usage: %s <image_size>\n", argv[0]);
         return 1;
     }
@@ -147,10 +131,8 @@ int main(int argc, char *argv[])
     int width = atoi(argv[1]), height = atoi(argv[1]);
     int *image = malloc(height * width * sizeof(int));
 
-    for (int i = 0; i < height; i++)
-    {
-        for (int j = 0; j < width; j++)
-        {
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
             image[i * width + j] = rand() % 256;
         }
     }
