@@ -1,78 +1,11 @@
 #include <stdio.h>
 #include <math.h>
-#include <png.h>
 #include <stdlib.h>
 #include <omp.h>
 
 #define LANCZOS_RADIUS 3
 
 #pragma region NO_PARRALLEL
-
-void write_png(const char *filename, int **matrix, int width, int height)
-{
-    FILE *fp = fopen(filename, "wb");
-    if (!fp)
-    {
-        perror("File opening failed");
-        return;
-    }
-
-    png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    if (!png)
-    {
-        fclose(fp);
-        fprintf(stderr, "Failed to create png struct\n");
-        return;
-    }
-
-    png_infop info = png_create_info_struct(png);
-    if (!info)
-    {
-        png_destroy_write_struct(&png, NULL);
-        fclose(fp);
-        fprintf(stderr, "Failed to create info struct\n");
-        return;
-    }
-
-    if (setjmp(png_jmpbuf(png)))
-    {
-        png_destroy_write_struct(&png, &info);
-        fclose(fp);
-        fprintf(stderr, "Error during png creation\n");
-        return;
-    }
-
-    png_init_io(png, fp);
-
-    // Set the PNG header info for an RGBA image
-    png_set_IHDR(
-        png, info, width, height,
-        8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE,
-        PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
-    png_write_info(png, info);
-
-    // Write each row of the matrix to the PNG file as RGBA values
-    for (int y = 0; y < height; y++)
-    {
-        png_bytep row = (png_bytep)malloc(width * 4 * sizeof(png_byte)); // 4 bytes per pixel for RGBA
-        for (int x = 0; x < width; x++)
-        {
-            int grayscale = matrix[y][x];
-            grayscale = grayscale > 255 ? 255 : (grayscale < 0 ? 0 : grayscale); // Clamp to [0, 255]
-
-            row[x * 4 + 0] = grayscale; // Red
-            row[x * 4 + 1] = grayscale; // Green
-            row[x * 4 + 2] = grayscale; // Blue
-            row[x * 4 + 3] = 255;       // Alpha (fully opaque)
-        }
-        png_write_row(png, row);
-        free(row);
-    }
-
-    png_write_end(png, NULL);
-    png_destroy_write_struct(&png, &info);
-    fclose(fp);
-}
 
 void print(int **a, int height, int width)
 {
@@ -88,7 +21,6 @@ void print(int **a, int height, int width)
 
 #pragma endregion
 
-// TODO: improve using Taylor series
 double lanczos_kernel(double x)
 {
     int a = LANCZOS_RADIUS;
