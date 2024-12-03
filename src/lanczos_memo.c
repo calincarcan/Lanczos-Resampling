@@ -8,25 +8,17 @@
 // Memorizarea de valori pentru kernelul Lanczos
 double lanczos_values[LANCZOS_RADIUS * 2 + 1][LANCZOS_RADIUS * 2 + 1];
 
-double lanczos_kernel(double x)
-{
-
-    if (lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x] != 0)
-    {
+double lanczos_kernel(double x) {
+    if (lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x] != 0) {
         return lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x];
     }
 
     int a = LANCZOS_RADIUS;
     if (x == 0)
-    {
-        return 1.0; // sinc(0) = 1
-    }
+        return 1.0;
     else if (x == a || x == -a)
-    {
-        return 0.0; // Lanczos function for values of x = ±a
-    }
-    else
-    {
+        return 0.0;
+    else {
         lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x] = (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
         return (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
     }
@@ -36,8 +28,7 @@ double lanczos_kernel(double x)
 
 
 
-void write_png(const char *filename, int **matrix, int width, int height)
-{
+void write_png(const char *filename, int **matrix, int width, int height) {
     FILE *fp = fopen(filename, "wb");
     if (!fp)
     {
@@ -102,12 +93,9 @@ void write_png(const char *filename, int **matrix, int width, int height)
     fclose(fp);
 }
 
-void print(int **a, int height, int width)
-{
-    for (int i = 0; i < height; i++)
-    {
-        for (int j = 0; j < width; j++)
-        {
+void print(int **a, int height, int width) {
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
             printf("%d ", a[i][j]);
         }
         printf("\n");
@@ -116,9 +104,7 @@ void print(int **a, int height, int width)
 
 #pragma endregion
 
-
-int lanczos_2d_interpolate(int **data, int height, int width, double x, double y)
-{
+int lanczos_2d_interpolate(int **data, int height, int width, double x, double y) {
     int a = LANCZOS_RADIUS;
 
     double result = 0;
@@ -127,38 +113,30 @@ int lanczos_2d_interpolate(int **data, int height, int width, double x, double y
     int center_x = (int)x;
     int center_y = (int)y;
 
-    for (int i = center_x - a + 1; i < center_x + a; i++)
-    {
-        for (int j = center_y - a + 1; j < center_y + a; j++)
-        {
+    for (int i = center_x - a + 1; i < center_x + a; i++) {
+        for (int j = center_y - a + 1; j < center_y + a; j++) {
             if (i < 0 || i >= height || j < 0 || j >= width)
-            {
                 continue;
-            }
             double weight = lanczos_kernel(x - i) * lanczos_kernel(y - j);
             result += weight * data[i][j];
             weight_sum += weight;
         }
     }
 
-    if (weight_sum != 0)
-    {
+    if (weight_sum != 0) {
         result /= weight_sum;
     }
 
     return result;
 }
 
-void apply_2d_lanczos(int **data, int height, int width, int **output, int new_height, int new_width)
-{
+void apply_2d_lanczos(int **data, int height, int width, int **output, int new_height, int new_width) {
     int a = LANCZOS_RADIUS;
     double scale_height = (double)(height - 1) / (new_height - 1);
     double scale_width = (double)(width - 1) / (new_width - 1);
 
-    for (int i = 0; i < new_height; i++)
-    {
-        for (int j = 0; j < new_width; j++)
-        {
+    for (int i = 0; i < new_height; i++) {
+        for (int j = 0; j < new_width; j++) {
             double x = i * scale_height;
             double y = j * scale_width;
             int result = lanczos_2d_interpolate(data, height, width, x, y);
@@ -171,17 +149,14 @@ void apply_2d_lanczos(int **data, int height, int width, int **output, int new_h
 #pragma region DEPRECATED
 
 // DEPRECATED
-int lanczos_1d_interpolate(int *data, int length, double x)
-{
+int lanczos_1d_interpolate(int *data, int length, double x) {
     int a = LANCZOS_RADIUS;
     int i;
     double result = 0.0;
     int center = (int)x; // the integer part of x
     double sum = 0.0;    // normalization factor (sum of kernels)
 
-    // Sum up the values weighted by the Lanczos kernel
-    for (i = -a + 1; i < a; i++)
-    {
+    for (i = -a + 1; i < a; i++) {
         if (center + i < 0 || center + i >= length)
             continue;
         double weight = lanczos_kernel(x - (center + i));
@@ -190,8 +165,7 @@ int lanczos_1d_interpolate(int *data, int length, double x)
     }
 
     // Normalize the result by the sum of the weights
-    if (sum != 0)
-    {
+    if (sum != 0) {
         result /= sum;
     }
 
@@ -199,8 +173,7 @@ int lanczos_1d_interpolate(int *data, int length, double x)
 }
 
 // DEPRECATED
-void apply_1d_lanczos(int *data, int length, int *output, int output_length)
-{
+void apply_1d_lanczos(int *data, int length, int *output, int output_length) {
     int a = LANCZOS_RADIUS;
     double scale = (double)(length - 1) / (output_length - 1); // scaling factor for resampling
     for (int i = 0; i < output_length; i++)
@@ -212,17 +185,14 @@ void apply_1d_lanczos(int *data, int length, int *output, int output_length)
 
 #pragma endregion
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     int width, height;
     width = atoi(argv[1]);
     height = atoi(argv[1]);
     int **image = malloc(height * sizeof(int *));
-    for (int i = 0; i < height; i++)
-    {
+    for (int i = 0; i < height; i++) {
         image[i] = malloc(width * sizeof(int));
-        for (int j = 0; j < width; j++)
-        {
+        for (int j = 0; j < width; j++) {
             image[i][j] = rand() % 256;
         }
     }
