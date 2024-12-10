@@ -1,0 +1,40 @@
+Time taken for lanczos_serial with 512 and 4096 is 18.404731273651123
+Time taken for lanczos_serial with 1024 and 8192 is 72.58419895172119
+Time taken for lanczos_serial with 2048 and 16384 is 293.17889428138733
+Time taken for lanczos_serial with 4096 and 32768 is 1189.456300020218
+
+Time taken for lanczos_omp with 512 and 4096 is 2.3909101486206055
+Time taken for lanczos_omp with 1024 and 8192 is 9.383034944534302
+Time taken for lanczos_omp with 2048 and 16384 is 37.337162017822266
+Time taken for lanczos_omp with 4096 and 32768 is 148.84621214866638
+
+Time taken for lanczos_pthreads with 512 and 4096 is 2.464463472366333
+Time taken for lanczos_pthreads with 1024 and 8192 is 9.779581308364868
+Time taken for lanczos_pthreads with 2048 and 16384 is 39.13181805610657
+Time taken for lanczos_pthreads with 4096 and 32768 is 155.4556438922882
+
+Time taken for lanczos_memo with 512 and 4096 is 3.887202739715576
+Time taken for lanczos_memo with 1024 and 8192 is 15.282569169998169
+Time taken for lanczos_memo with 2048 and 16384 is 61.23960781097412
+Time taken for lanczos_memo with 4096 and 32768 is 246.86938285827637
+====================================================================================================
+Time taken for lanczos_serial with 512 and 4096 is 18.76111912727356
+Time taken for lanczos_serial with 1024 and 8192 is 72.2949697971344
+Time taken for lanczos_serial with 2048 and 16384 is 295.6170439720154
+Time taken for lanczos_serial with 4096 and 32768 is 1144.2503082752228
+
+Time taken for lanczos_omp with 512 and 4096 is 0.5445566177368164
+Time taken for lanczos_omp with 1024 and 8192 is 2.182170867919922
+Time taken for lanczos_omp with 2048 and 16384 is 9.059198379516602
+Time taken for lanczos_omp with 4096 and 32768 is 33.056110858917236
+
+Time taken for lanczos_pthreads with 512 and 4096 is 0.6082549095153809
+Time taken for lanczos_pthreads with 1024 and 8192 is 2.390528917312622
+Time taken for lanczos_pthreads with 2048 and 16384 is 9.367407083511353
+Time taken for lanczos_pthreads with 4096 and 32768 is 37.0291748046875
+
+Time taken for lanczos_memo with 512 and 4096 is 3.849233627319336
+Time taken for lanczos_memo with 1024 and 8192 is 15.354830503463745
+Time taken for lanczos_memo with 2048 and 16384 is 61.67938280105591
+Time taken for lanczos_memo with 4096 and 32768 is 248.0636489391327
+====================================================================================================

@@ -4,33 +4,57 @@
 #include <stdlib.h>
 
 #define LANCZOS_RADIUS 3
-#define initial_size 512
-#define final_size 4096
+
+// Memorizarea de valori pentru kernelul Lanczos
+double lanczos_values[LANCZOS_RADIUS * 2 + 1][LANCZOS_RADIUS * 2 + 1];
+
+double lanczos_kernel(double x) {
+    if (lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x] != 0) {
+        return lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x];
+    }
+
+    int a = LANCZOS_RADIUS;
+    if (x == 0)
+        return 1.0;
+    else if (x == a || x == -a)
+        return 0.0;
+    else {
+        lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x] = (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
+        return (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
+    }
+}
+
 #pragma region NO_PARRALLEL
+
+
 
 void write_png(const char *filename, int **matrix, int width, int height) {
     FILE *fp = fopen(filename, "wb");
-    if (!fp) {
+    if (!fp)
+    {
         perror("File opening failed");
         return;
     }
 
     png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    if (!png) {
+    if (!png)
+    {
         fclose(fp);
         fprintf(stderr, "Failed to create png struct\n");
         return;
     }
 
     png_infop info = png_create_info_struct(png);
-    if (!info) {
+    if (!info)
+    {
         png_destroy_write_struct(&png, NULL);
         fclose(fp);
         fprintf(stderr, "Failed to create info struct\n");
         return;
     }
 
-    if (setjmp(png_jmpbuf(png))) {
+    if (setjmp(png_jmpbuf(png)))
+    {
         png_destroy_write_struct(&png, &info);
         fclose(fp);
         fprintf(stderr, "Error during png creation\n");
@@ -47,9 +71,11 @@ void write_png(const char *filename, int **matrix, int width, int height) {
     png_write_info(png, info);
 
     // Write each row of the matrix to the PNG file as RGBA values
-    for (int y = 0; y < height; y++) {
+    for (int y = 0; y < height; y++)
+    {
         png_bytep row = (png_bytep)malloc(width * 4 * sizeof(png_byte)); // 4 bytes per pixel for RGBA
-        for (int x = 0; x < width; x++) {
+        for (int x = 0; x < width; x++)
+        {
             int grayscale = matrix[y][x];
             grayscale = grayscale > 255 ? 255 : (grayscale < 0 ? 0 : grayscale); // Clamp to [0, 255]
 
@@ -77,19 +103,6 @@ void print(int **a, int height, int width) {
 }
 
 #pragma endregion
-
-double lanczos_kernel(double x) {
-    int a = LANCZOS_RADIUS;
-    if (x == 0) {
-        return 1.0; // sinc(0) = 1
-    }
-    else if (x == a || x == -a) {
-        return 0.0; // Lanczos function for values of x = ±a
-    }
-    else {
-        return (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
-    }
-}
 
 int lanczos_2d_interpolate(int **data, int height, int width, double x, double y) {
     int a = LANCZOS_RADIUS;
@@ -143,7 +156,6 @@ int lanczos_1d_interpolate(int *data, int length, double x) {
     int center = (int)x; // the integer part of x
     double sum = 0.0;    // normalization factor (sum of kernels)
 
-    // Sum up the values weighted by the Lanczos kernel
     for (i = -a + 1; i < a; i++) {
         if (center + i < 0 || center + i >= length)
             continue;
@@ -164,7 +176,8 @@ int lanczos_1d_interpolate(int *data, int length, double x) {
 void apply_1d_lanczos(int *data, int length, int *output, int output_length) {
     int a = LANCZOS_RADIUS;
     double scale = (double)(length - 1) / (output_length - 1); // scaling factor for resampling
-    for (int i = 0; i < output_length; i++) {
+    for (int i = 0; i < output_length; i++)
+    {
         double x = i * scale;
         output[i] = lanczos_1d_interpolate(data, length, x);
     }
@@ -195,17 +208,19 @@ int main(int argc, char *argv[]) {
 
     // Free the memory allocated for the images
 
-    for (int i = 0; i < height; i++) {
+    for (int i = 0; i < height; i++)
+    {
         free(image[i]);
     }
 
     free(image);
 
-    for (int i = 0; i < new_height; i++) {
+    for (int i = 0; i < new_height; i++)
+    {
         free(new_image[i]);
     }
 
     free(new_image);
-    
+
     return 0;
 }

@@ -1,11 +1,45 @@
+#include <pthread.h>
 #include <stdio.h>
 #include <math.h>
 #include <png.h>
 #include <stdlib.h>
+#include <omp.h>
 
 #define LANCZOS_RADIUS 3
-#define initial_size 512
-#define final_size 4096
+#define NUM_THREADS 8 // Define the number of threads
+
+// Memorizarea de valori pentru kernelul Lanczos
+double lanczos_values[LANCZOS_RADIUS * 2 + 1][LANCZOS_RADIUS * 2 + 1];
+
+double lanczos_kernel(double x) {
+    if (lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x] != 0) {
+        return lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x];
+    }
+
+    int a = LANCZOS_RADIUS;
+    if (x == 0) {
+        return 1.0; // sinc(0) = 1
+    }
+    else if (x == a || x == -a) {
+        return 0.0; // Lanczos function for values of x = ±a
+    }
+    else {
+        lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x] = (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
+        return (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
+    }
+}
+
+typedef struct {
+    int **data;
+    int height;
+    int width;
+    int **output;
+    int new_height;
+    int new_width;
+    int start_row;
+    int end_row;
+} ThreadData;
+
 #pragma region NO_PARRALLEL
 
 void write_png(const char *filename, int **matrix, int width, int height) {
@@ -78,19 +112,6 @@ void print(int **a, int height, int width) {
 
 #pragma endregion
 
-double lanczos_kernel(double x) {
-    int a = LANCZOS_RADIUS;
-    if (x == 0) {
-        return 1.0; // sinc(0) = 1
-    }
-    else if (x == a || x == -a) {
-        return 0.0; // Lanczos function for values of x = ±a
-    }
-    else {
-        return (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
-    }
-}
-
 int lanczos_2d_interpolate(int **data, int height, int width, double x, double y) {
     int a = LANCZOS_RADIUS;
 
@@ -117,12 +138,24 @@ int lanczos_2d_interpolate(int **data, int height, int width, double x, double y
     return result;
 }
 
-void apply_2d_lanczos(int **data, int height, int width, int **output, int new_height, int new_width) {
-    int a = LANCZOS_RADIUS;
+// Thread function to process a subset of rows
+void *thread_func(void *arg) {
+    ThreadData *thread_data = (ThreadData *)arg;
+
+    int **data = thread_data->data;
+    int height = thread_data->height;
+    int width = thread_data->width;
+    int **output = thread_data->output;
+    int new_height = thread_data->new_height;
+    int new_width = thread_data->new_width;
+    int start_row = thread_data->start_row;
+    int end_row = thread_data->end_row;
+
     double scale_height = (double)(height - 1) / (new_height - 1);
     double scale_width = (double)(width - 1) / (new_width - 1);
 
-    for (int i = 0; i < new_height; i++) {
+#pragma omp parallel for collapse(2) schedule(dynamic) // Parallelize the nested loops
+    for (int i = start_row; i < end_row; i++) {
         for (int j = 0; j < new_width; j++) {
             double x = i * scale_height;
             double y = j * scale_width;
@@ -130,6 +163,38 @@ void apply_2d_lanczos(int **data, int height, int width, int **output, int new_h
             result = fmax(fmin(result, 255), 0);
             output[i][j] = result;
         }
+    }
+
+    return NULL;
+}
+
+void apply_2d_lanczos(int **data, int height, int width, int **output, int new_height, int new_width) {
+    pthread_t threads[NUM_THREADS];
+    ThreadData thread_data[NUM_THREADS];
+
+    int rows_per_thread = new_height / NUM_THREADS;
+    int extra_rows = new_height % NUM_THREADS;
+
+    for (int t = 0; t < NUM_THREADS; t++) {
+        thread_data[t].data = data;
+        thread_data[t].height = height;
+        thread_data[t].width = width;
+        thread_data[t].output = output;
+        thread_data[t].new_height = new_height;
+        thread_data[t].new_width = new_width;
+        thread_data[t].start_row = t * rows_per_thread;
+        thread_data[t].end_row = (t + 1) * rows_per_thread;
+
+        if (t == NUM_THREADS - 1) {
+            thread_data[t].end_row += extra_rows; // Handle remaining rows in the last thread
+        }
+
+        pthread_create(&threads[t], NULL, thread_func, &thread_data[t]);
+    }
+
+    // Wait for all threads to finish
+    for (int t = 0; t < NUM_THREADS; t++) {
+        pthread_join(threads[t], NULL);
     }
 }
 
@@ -206,6 +271,5 @@ int main(int argc, char *argv[]) {
     }
 
     free(new_image);
-    
     return 0;
 }
