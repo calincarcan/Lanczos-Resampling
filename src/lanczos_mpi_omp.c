@@ -73,10 +73,10 @@ int main(int argc, char *argv[]) {
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
- 
-    int height = 512, width = 512; // Input image dimensions
-    int new_height = 4096, new_width = 4096; // Output image dimensions
- 
+
+    int height = 16, width = 16;             // Input image dimensions
+    int new_height = 128, new_width = 128;   // Output image dimensions
+
     int **data = NULL; // Input image
     int **local_output; // Output image for this process
  
@@ -161,7 +161,6 @@ int main(int argc, char *argv[]) {
                 final_output[i][j] = final_output_flat[i * new_width + j];
             }
         }
-        printf("Resampling completed.\n");
     }
  
     // Clean up
