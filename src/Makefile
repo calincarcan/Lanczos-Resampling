@@ -9,15 +9,16 @@ lanczos_cache:
 lanczos_memo:
 	gcc -o ../bin/lanczos_memo lanczos_memo.c -lm -lpng
 
+
 lanczos_serial: lanczos_serial.c 
-	gcc -o ../bin/lanczos_serial lanczos_serial.c -lm -lpng
+	gcc -o ../bin/lanczos_serial lanczos_serial.c -lm
 
 lanczos_omp: lanczos_omp.c 
-	gcc -o ../bin/lanczos_omp lanczos_omp.c -lm -lpng -fopenmp
-
+	gcc -o ../bin/lanczos_omp lanczos_omp.c -lm -fopenmp
+  
 clean:
 	rm -f ../bin/*
-	rm -f *.txt
+	rm -f *.txt *.out
 
 run_batch:
 	python3 batch.py >> batch.txt
