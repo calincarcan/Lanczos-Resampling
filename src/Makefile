@@ -15,21 +15,6 @@ lanczos_serial: lanczos_serial.c
 lanczos_omp: lanczos_omp.c 
 	gcc -o ../bin/lanczos_omp lanczos_omp.c -lm -lpng -fopenmp
 
-run_lanczos_cache:
-	../bin/lanczos_cache
-
-run_lanczos_serial: 
-	../bin/lanczos_serial
-
-run_omp: 
-	../bin/lanczos_omp
-
-run_pthreads: 
-	../bin/lanczos_pthreads
-
-run_memo:
-	../bin/lanczos_memeo
-
 clean:
 	rm -f ../bin/*
 	rm -f *.txt
