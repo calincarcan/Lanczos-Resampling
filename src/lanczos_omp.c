@@ -183,6 +183,11 @@ void apply_1d_lanczos(int *data, int length, int *output, int output_length) {
 #pragma endregion
 
 int main(int argc, char *argv[]) {
+
+    int width, height;
+    width = atoi(argv[1]);
+    height = atoi(argv[1]);
+
     int **image = malloc(height * sizeof(int *));
     for (int i = 0; i < height; i++) {
         image[i] = malloc(width * sizeof(int));
