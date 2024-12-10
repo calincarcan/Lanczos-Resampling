@@ -1,3 +1,5 @@
+// Bogdan
+
 #include <stdio.h>
 #include <math.h>
 #include <png.h>
@@ -25,73 +27,6 @@ double lanczos_kernel(double x) {
 }
 
 #pragma region NO_PARRALLEL
-
-
-
-void write_png(const char *filename, int **matrix, int width, int height) {
-    FILE *fp = fopen(filename, "wb");
-    if (!fp)
-    {
-        perror("File opening failed");
-        return;
-    }
-
-    png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    if (!png)
-    {
-        fclose(fp);
-        fprintf(stderr, "Failed to create png struct\n");
-        return;
-    }
-
-    png_infop info = png_create_info_struct(png);
-    if (!info)
-    {
-        png_destroy_write_struct(&png, NULL);
-        fclose(fp);
-        fprintf(stderr, "Failed to create info struct\n");
-        return;
-    }
-
-    if (setjmp(png_jmpbuf(png)))
-    {
-        png_destroy_write_struct(&png, &info);
-        fclose(fp);
-        fprintf(stderr, "Error during png creation\n");
-        return;
-    }
-
-    png_init_io(png, fp);
-
-    // Set the PNG header info for an RGBA image
-    png_set_IHDR(
-        png, info, width, height,
-        8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE,
-        PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
-    png_write_info(png, info);
-
-    // Write each row of the matrix to the PNG file as RGBA values
-    for (int y = 0; y < height; y++)
-    {
-        png_bytep row = (png_bytep)malloc(width * 4 * sizeof(png_byte)); // 4 bytes per pixel for RGBA
-        for (int x = 0; x < width; x++)
-        {
-            int grayscale = matrix[y][x];
-            grayscale = grayscale > 255 ? 255 : (grayscale < 0 ? 0 : grayscale); // Clamp to [0, 255]
-
-            row[x * 4 + 0] = grayscale; // Red
-            row[x * 4 + 1] = grayscale; // Green
-            row[x * 4 + 2] = grayscale; // Blue
-            row[x * 4 + 3] = 255;       // Alpha (fully opaque)
-        }
-        png_write_row(png, row);
-        free(row);
-    }
-
-    png_write_end(png, NULL);
-    png_destroy_write_struct(&png, &info);
-    fclose(fp);
-}
 
 void print(int **a, int height, int width) {
     for (int i = 0; i < height; i++) {
@@ -145,45 +80,6 @@ void apply_2d_lanczos(int **data, int height, int width, int **output, int new_h
         }
     }
 }
-
-#pragma region DEPRECATED
-
-// DEPRECATED
-int lanczos_1d_interpolate(int *data, int length, double x) {
-    int a = LANCZOS_RADIUS;
-    int i;
-    double result = 0.0;
-    int center = (int)x; // the integer part of x
-    double sum = 0.0;    // normalization factor (sum of kernels)
-
-    for (i = -a + 1; i < a; i++) {
-        if (center + i < 0 || center + i >= length)
-            continue;
-        double weight = lanczos_kernel(x - (center + i));
-        result += weight * data[center + i];
-        sum += weight;
-    }
-
-    // Normalize the result by the sum of the weights
-    if (sum != 0) {
-        result /= sum;
-    }
-
-    return result;
-}
-
-// DEPRECATED
-void apply_1d_lanczos(int *data, int length, int *output, int output_length) {
-    int a = LANCZOS_RADIUS;
-    double scale = (double)(length - 1) / (output_length - 1); // scaling factor for resampling
-    for (int i = 0; i < output_length; i++)
-    {
-        double x = i * scale;
-        output[i] = lanczos_1d_interpolate(data, length, x);
-    }
-}
-
-#pragma endregion
 
 int main(int argc, char *argv[]) {
     int width, height;

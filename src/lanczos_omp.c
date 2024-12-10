@@ -1,3 +1,5 @@
+// Bogdan
+
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -82,45 +84,6 @@ void apply_2d_lanczos(int **data, int height, int width, int **output, int new_h
         }
     }
 }
-
-#pragma region DEPRECATED
-
-// DEPRECATED
-int lanczos_1d_interpolate(int *data, int length, double x) {
-    int a = LANCZOS_RADIUS;
-    int i;
-    double result = 0.0;
-    int center = (int)x; // the integer part of x
-    double sum = 0.0;    // normalization factor (sum of kernels)
-
-    // Sum up the values weighted by the Lanczos kernel
-    for (i = -a + 1; i < a; i++) {
-        if (center + i < 0 || center + i >= length)
-            continue;
-        double weight = lanczos_kernel(x - (center + i));
-        result += weight * data[center + i];
-        sum += weight;
-    }
-
-    // Normalize the result by the sum of the weights
-    if (sum != 0) {
-        result /= sum;
-    }
-
-    return result;
-}
-
-// DEPRECATED
-void apply_1d_lanczos(int *data, int length, int *output, int output_length) {
-    int a = LANCZOS_RADIUS;
-    double scale = (double)(length - 1) / (output_length - 1); // scaling factor for resampling
-    for (int i = 0; i < output_length; i++) {
-        double x = i * scale;
-        output[i] = lanczos_1d_interpolate(data, length, x);
-    }
-}
-
-#pragma endregion
 
 int main(int argc, char *argv[]) {
 
