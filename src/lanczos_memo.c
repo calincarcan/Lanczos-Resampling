@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
+#include <png.h>
 #include <stdlib.h>
-#include <omp.h>
 
 #define LANCZOS_RADIUS 3
 
@@ -9,23 +9,89 @@
 double lanczos_values[LANCZOS_RADIUS * 2 + 1][LANCZOS_RADIUS * 2 + 1];
 
 double lanczos_kernel(double x) {
-    if (lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x] != 0)
+    if (lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x] != 0) {
         return lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x];
+    }
 
     int a = LANCZOS_RADIUS;
-    if (x == 0) {
-        return 1.0; // sinc(0) = 1
-    }
-    else if (x == a || x == -a) {
-        return 0.0; // Lanczos function for values of x = ±a
-    }
+    if (x == 0)
+        return 1.0;
+    else if (x == a || x == -a)
+        return 0.0;
     else {
         lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x] = (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
-        return lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x];
+        return (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
     }
 }
 
 #pragma region NO_PARRALLEL
+
+
+
+void write_png(const char *filename, int **matrix, int width, int height) {
+    FILE *fp = fopen(filename, "wb");
+    if (!fp)
+    {
+        perror("File opening failed");
+        return;
+    }
+
+    png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if (!png)
+    {
+        fclose(fp);
+        fprintf(stderr, "Failed to create png struct\n");
+        return;
+    }
+
+    png_infop info = png_create_info_struct(png);
+    if (!info)
+    {
+        png_destroy_write_struct(&png, NULL);
+        fclose(fp);
+        fprintf(stderr, "Failed to create info struct\n");
+        return;
+    }
+
+    if (setjmp(png_jmpbuf(png)))
+    {
+        png_destroy_write_struct(&png, &info);
+        fclose(fp);
+        fprintf(stderr, "Error during png creation\n");
+        return;
+    }
+
+    png_init_io(png, fp);
+
+    // Set the PNG header info for an RGBA image
+    png_set_IHDR(
+        png, info, width, height,
+        8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE,
+        PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+    png_write_info(png, info);
+
+    // Write each row of the matrix to the PNG file as RGBA values
+    for (int y = 0; y < height; y++)
+    {
+        png_bytep row = (png_bytep)malloc(width * 4 * sizeof(png_byte)); // 4 bytes per pixel for RGBA
+        for (int x = 0; x < width; x++)
+        {
+            int grayscale = matrix[y][x];
+            grayscale = grayscale > 255 ? 255 : (grayscale < 0 ? 0 : grayscale); // Clamp to [0, 255]
+
+            row[x * 4 + 0] = grayscale; // Red
+            row[x * 4 + 1] = grayscale; // Green
+            row[x * 4 + 2] = grayscale; // Blue
+            row[x * 4 + 3] = 255;       // Alpha (fully opaque)
+        }
+        png_write_row(png, row);
+        free(row);
+    }
+
+    png_write_end(png, NULL);
+    png_destroy_write_struct(&png, &info);
+    fclose(fp);
+}
 
 void print(int **a, int height, int width) {
     for (int i = 0; i < height; i++) {
@@ -38,8 +104,7 @@ void print(int **a, int height, int width) {
 
 #pragma endregion
 
-int lanczos_2d_interpolate(int **data, int height, int width, double x, double y)
-{
+int lanczos_2d_interpolate(int **data, int height, int width, double x, double y) {
     int a = LANCZOS_RADIUS;
 
     double result = 0;
@@ -48,7 +113,6 @@ int lanczos_2d_interpolate(int **data, int height, int width, double x, double y
     int center_x = (int)x;
     int center_y = (int)y;
 
-// #pragma omp parallel for collapse(2) reduction(+ : result, weight_sum) -- mai lent
     for (int i = center_x - a + 1; i < center_x + a; i++) {
         for (int j = center_y - a + 1; j < center_y + a; j++) {
             if (i < 0 || i >= height || j < 0 || j >= width)
@@ -71,7 +135,6 @@ void apply_2d_lanczos(int **data, int height, int width, int **output, int new_h
     double scale_height = (double)(height - 1) / (new_height - 1);
     double scale_width = (double)(width - 1) / (new_width - 1);
 
-#pragma omp parallel for collapse(2)
     for (int i = 0; i < new_height; i++) {
         for (int j = 0; j < new_width; j++) {
             double x = i * scale_height;
@@ -93,7 +156,6 @@ int lanczos_1d_interpolate(int *data, int length, double x) {
     int center = (int)x; // the integer part of x
     double sum = 0.0;    // normalization factor (sum of kernels)
 
-    // Sum up the values weighted by the Lanczos kernel
     for (i = -a + 1; i < a; i++) {
         if (center + i < 0 || center + i >= length)
             continue;
@@ -114,7 +176,8 @@ int lanczos_1d_interpolate(int *data, int length, double x) {
 void apply_1d_lanczos(int *data, int length, int *output, int output_length) {
     int a = LANCZOS_RADIUS;
     double scale = (double)(length - 1) / (output_length - 1); // scaling factor for resampling
-    for (int i = 0; i < output_length; i++) {
+    for (int i = 0; i < output_length; i++)
+    {
         double x = i * scale;
         output[i] = lanczos_1d_interpolate(data, length, x);
     }
@@ -123,11 +186,9 @@ void apply_1d_lanczos(int *data, int length, int *output, int output_length) {
 #pragma endregion
 
 int main(int argc, char *argv[]) {
-
     int width, height;
     width = atoi(argv[1]);
     height = atoi(argv[1]);
-
     int **image = malloc(height * sizeof(int *));
     for (int i = 0; i < height; i++) {
         image[i] = malloc(width * sizeof(int));
@@ -147,16 +208,19 @@ int main(int argc, char *argv[]) {
 
     // Free the memory allocated for the images
 
-    for (int i = 0; i < height; i++) {
+    for (int i = 0; i < height; i++)
+    {
         free(image[i]);
     }
 
     free(image);
 
-    for (int i = 0; i < new_height; i++) {
+    for (int i = 0; i < new_height; i++)
+    {
         free(new_image[i]);
     }
 
     free(new_image);
+
     return 0;
 }
