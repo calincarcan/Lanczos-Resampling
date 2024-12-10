@@ -15,6 +15,23 @@ void print(int **a, int height, int width) {
     }
 }
 
+double lanczos_kernel(double x)
+{
+    int a = LANCZOS_RADIUS;
+    if (x == 0)
+    {
+        return 1.0;
+    }
+    else if (x >= a || x <= -a)
+    {
+        return 0.0;
+    }
+    else
+    {
+        return (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
+    }
+}
+
 int lanczos_2d_interpolate(int **data, int height, int width, double x, double y) {
 
     int a = LANCZOS_RADIUS;
