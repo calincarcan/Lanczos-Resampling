@@ -115,19 +115,16 @@ void apply_2d_lanczos_mpi(int **data, int height, int width, int **output, int n
 }
  
 int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        printf("Usage: %s <initial_size> <final_size>\n", argv[0]);
-        return 1;
-    }
+    
     int rank, size;
  
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
- 
-    int height = atoi(argv[1]), width = atoi(argv[1]); // Input image dimensions
-    int new_height = atoi(argv[2]), new_width = atoi(argv[2]); // Output image dimensions
- 
+
+    int height = 16, width = 16;           // Input image dimensions
+    int new_height = 128, new_width = 128; // Output image dimensions
+
     int **data = NULL; // Input image
     int **local_output; // Output image for this process
  
@@ -212,7 +209,6 @@ int main(int argc, char *argv[]) {
                 final_output[i][j] = final_output_flat[i * new_width + j];
             }
         }
-        printf("Resampling completed.\n");
     }
  
     // Clean up
