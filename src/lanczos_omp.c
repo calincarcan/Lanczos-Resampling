@@ -19,7 +19,7 @@ double lanczos_kernel(double x) {
         return 1.0; // sinc(0) = 1
     }
     else if (x == a || x == -a) {
-        return 0.0; // Lanczos function for values of x = ±a
+        return 0.0;
     }
     else {
         lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x] = (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
