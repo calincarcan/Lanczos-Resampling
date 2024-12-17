@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <omp.h>
 
 #define LANCZOS_RADIUS 3
 #define NUM_THREADS 8
@@ -95,6 +96,7 @@ void *thread_func(void *arg) {
     double scale_height = (double)(height - 1) / (new_height - 1);
     double scale_width = (double)(width - 1) / (new_width - 1);
 
+#pragma omp parallel for collapse(2) schedule(dynamic) // Parallelize the nested loops
     for (int i = start_row; i < end_row; i++) {
         for (int j = 0; j < new_width; j++) {
             double x = i * scale_height;

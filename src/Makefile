@@ -1,4 +1,10 @@
-build_all: lanczos_memo lanczos_mpi_omp lanczos_mpi_pthreads lanczos_mpi_threads lanczos_omp lanczos_pthreads lanczos_serial lanczos_mpi_thr_pts
+build_all: lanczos_memo lanczos_mpi_omp lanczos_mpi_pthreads lanczos_mpi_threads lanczos_omp lanczos_pthreads lanczos_serial lanczos_mpi_thr_pts lanczos_pthreads_omp lanczos_phtreads_omp_ptr
+
+lanczos_phtreads_omp_ptr:
+	gcc -o ../bin/lanczos_phtreads_omp_ptr lanczos_pthreads_omp_ptr.c -lm -lpthread -fopenmp
+
+lanczos_pthreads_omp:
+	gcc -o ../bin/lanczos_pthreads_omp lanczos_pthreads_omp.c -lm -lpthread -fopenmp
 
 lanczos_mpi_thr_pts: lanczos_mpi_thr_pts.c
 	mpicc -o ../bin/lanczos_mpi_thr_pts lanczos_mpi_thr_pts.c -lm
