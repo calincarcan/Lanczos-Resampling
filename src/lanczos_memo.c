@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <math.h>
-#include <png.h>
 #include <stdlib.h>
 
 #define LANCZOS_RADIUS 3

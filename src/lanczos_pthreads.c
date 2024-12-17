@@ -3,7 +3,6 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <math.h>
-#include <png.h>
 #include <stdlib.h>
 #include <omp.h>
 
