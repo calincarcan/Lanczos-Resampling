@@ -9,13 +9,13 @@
 #define LANCZOS_RADIUS 3
 #define NUM_THREADS 8
 
-double lanczos_values[LANCZOS_RADIUS * 2 + 1][LANCZOS_RADIUS * 2 + 1];
+double lanczos_values[255][255];
 
 double lanczos_kernel(double x)
 {
-    if (lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x] != 0)
+    if (lanczos_values[(int)x][(int)x] != 0)
     {
-        return lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x];
+        return lanczos_values[(int)x][(int)x];
     }
 
     int a = LANCZOS_RADIUS;
@@ -29,7 +29,7 @@ double lanczos_kernel(double x)
     }
     else
     {
-        lanczos_values[LANCZOS_RADIUS + (int)x][LANCZOS_RADIUS + (int)x] = (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
+        lanczos_values[(int)x][(int)x] = (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
         return (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
     }
 }

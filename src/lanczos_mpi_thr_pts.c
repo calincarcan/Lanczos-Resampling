@@ -23,14 +23,27 @@ typedef struct {
 
 #define LANCZOS_RADIUS 3
 #define MASTER 0
+double lanczos_values[255][255];
 
-double lanczos_kernel(double x) {
+double lanczos_kernel(double x)
+{
+    if (lanczos_values[(int)x][(int)x] != 0)
+    {
+        return lanczos_values[(int)x][(int)x];
+    }
+
     int a = LANCZOS_RADIUS;
-    if (x == 0) {
-        return 1.0;
-    } else if (x == a || x == -a) {
-        return 0.0;
-    } else {
+    if (x == 0)
+    {
+        return 1.0; // sinc(0) = 1
+    }
+    else if (x == a || x == -a)
+    {
+        return 0.0; // Lanczos function for values of x = ±a
+    }
+    else
+    {
+        lanczos_values[(int)x][(int)x] = (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
         return (sin(M_PI * x) / (M_PI * x)) * (sin(M_PI * x / a) / (M_PI * x / a));
     }
 }
